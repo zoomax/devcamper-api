@@ -6,15 +6,13 @@ const BootcampModel = require("../db/models/bootcamp");
 //@access   Public
 const getCourses = async (req, res, next) => {
   const { id } = req.params;
-  console.log(id, "from  course controller");
+  console.log(id, "from course controller");
   try {
-    const courses = id
-      ? await CourseModel.find({ bootcamp: id }).populate(
-          "bootcamp",
-          "name description"
-        )
-      : await CourseModel.find().populate("bootcamp", "name description");
-
+    if (!id) return next();
+    const courses = await CourseModel.find({ bootcamp: id }).populate(
+      "bootcamp",
+      "name description"
+    );
     req.response = {
       statusCode: courses.length > 0 ? 200 : 404,
       data: courses.length > 0 ? courses : [],

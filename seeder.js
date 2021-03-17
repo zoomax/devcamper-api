@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const colors = require("colors");
 const fs = require("fs");
 const BootcampModel = require("./db/models/bootcamp");
-const CourseModel  = require("./db/models/course") ; 
+const CourseModel = require("./db/models/course");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./config/config.env" });
 
@@ -23,7 +23,7 @@ const importData = async function () {
       fs.readFileSync(`${__dirname}/_data/courses.json`, "utf-8")
     );
     await BootcampModel.create(bootcamps);
-    await CourseModel.create(courses) ; 
+    await CourseModel.create(courses);
     console.log("Data imported...".green.inverse);
     process.exit();
   } catch (err) {
@@ -48,3 +48,4 @@ if (process.argv[2] === "-i") {
 if (process.argv[2] === "-d") {
   destroyData();
 }
+  

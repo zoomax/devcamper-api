@@ -12,6 +12,10 @@ const BootcampSchema = new Schema(
       required: [true, "name is required"],
       trim: true,
     },
+    photo : {
+      type : String , 
+      trim : true
+    } , 
     slug: String,
     description: {
       type: String,

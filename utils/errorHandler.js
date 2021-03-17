@@ -27,6 +27,12 @@ const centralErrorHandler = (err, req, res, next) => {
   if (err.name == "ValidationError") {
     return validationErrorHandler(err, res);
   }
+  if (err.name == "JsonWebTokenError") {
+    res.status(500).json({
+      message: err.message,
+      error  : err.name 
+    });
+  }
   if (err.code && err.code == 11000) {
     return duplicateErrorHandler(err, res);
   }
@@ -38,7 +44,8 @@ const centralErrorHandler = (err, req, res, next) => {
   }
   console.log(err);
   res.status(500).json({
-    message: "internal server error",
+    message:err.message ,
+    error : "internal server error"
   });
 };
 

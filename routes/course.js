@@ -6,14 +6,16 @@ const {
   createCourse,
   getCourseById,
 } = require("../controllers/course");
+const CourseModel = require("../db/models/course");
+const advancedResponse = require("../middlewares/advancedResponse");
 const responseHandler = require("../utils/responseHandler");
 
 const router = Router();
 
 router
   .route("/")
-  .get(getCourses, responseHandler)
-  
+  .get(getCourses, advancedResponse(CourseModel), responseHandler);
+
 router
   .route("/:courseId")
   .get(getCourseById, responseHandler)

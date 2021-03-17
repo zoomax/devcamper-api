@@ -1,55 +1,14 @@
 const BootcampModel = require("../db/models/bootcamp");
-const { remove } = require("../db/models/course");
+const path = require("path");
 const CourseModel = require("../db/models/course");
 const geocoder = require("../utils/geocoder");
+const { findByIdAndUpdate } = require("../db/models/bootcamp");
 // router  "/api/v1/bootcamps/"
 // method  GET all bootcapms
 // access  Public
 const getBootcamps = async function (req, res, next) {
-  let queryCopy = { ...req.query };
-  let { select, sort, limit, page } = req.query;
-  let selectionString = select ? select.split(",").join(" ") : "";
-  let sortString = sort ? sort.split(",").join(" ") : "";
-  let fields = ["sort", "select", "limit", "page"];
-  let currentPage = page ? parseInt(page, 10) : 1;
-  let currentPageLimit = limit ? parseInt(limit, 10) : 25;
-  let skippedItems = (currentPage - 1) * currentPageLimit;
-  fields.forEach((param) => delete queryCopy[param]);
-  let stringifiedQuery = JSON.stringify(queryCopy);
-  let query = stringifiedQuery.replace(
-    /\b(in|gte|gt|lt|lte)\b/g,
-    (match) => `$${match}`
-  );
-  try {
-    const total = await BootcampModel.countDocuments();
-    const bootcamps = await BootcampModel.find(JSON.parse(query))
-      .select(selectionString)
-      .sort(sortString)
-      .skip(skippedItems)
-      .limit(currentPageLimit).populate("courses","name description");
-
-    req.response = {
-      statusCode: 200,
-      data: bootcamps.length ? bootcamps : [],
-      pagination: {
-        next:
-          skippedItems < total
-            ? {
-                page: currentPage + 1,
-                limit: currentPageLimit,
-              }
-            : undefined,
-        prev:
-          skippedItems > 0
-            ? {
-                page: currentPage - 1,
-                limit: currentPageLimit,
-              }
-            : undefined,
-      },
-    };
-
-    next();
+  try { 
+    next()
   } catch (error) {
     next(error);
   }
@@ -60,7 +19,10 @@ const getBootcamps = async function (req, res, next) {
 const getBootcamp = async (req, res, next) => {
   try {
     let { id } = req.params;
-    const bootcamp = await BootcampModel.findById(id).populate("courses","title description tuition");
+    const bootcamp = await BootcampModel.findById(id).populate(
+      "courses",
+      "title description tuition"
+    );
     // console.log(bootcamp);
     req.response = {
       data: bootcamp ? [bootcamp] : [],
@@ -175,7 +137,49 @@ const getBootcampCourses = async (req, res, next) => {
     next(err);
   }
 };
-
+const uploadBootcampImage = async function (req, res, next) {
+  try {
+    const { id } = req.params;
+    const { image } = req.files;
+    let isUploaded = req.files ? true : false;
+    // checking the type of the uploaded file
+    if (
+      isUploaded &&
+      image.mimetype.split("/")[0] === "image" &&
+      image.size < process.env.MAX_FILE_UPLOAD
+    ) {
+      console.log(image.name, " from the conditional statement");
+      image.name = `photo-${id}${path.parse(image.name).ext}`;
+      console.log(image.name);
+      image.mv(`${process.env.FILE_UPLOAD_PATH}/${image.name}`, async (err) => {
+        if (err) next(err);
+        const bootcamp = await BootcampModel.findByIdAndUpdate(
+          id,
+          {
+            photo: image.name,
+          },
+          { new: true }
+        );
+        // console.log(bootcamp);
+        req.response = {
+          statusCode: bootcamp ? 203 : 404,
+          data: bootcamp ? [bootcamp] : [],
+        };
+        console.log(req.response) ; 
+        next();
+      });
+    } else {
+      console.log(image.name, " from the else statement");
+      console.log(image.mimetype.split("/")[0] == "image");
+      req.response = {
+        statusCode: 404,
+      };
+      next();
+    }
+  } catch (err) {
+    next(err);
+  }
+};
 module.exports = {
   createBootcamp,
   deleteBootcamp,
@@ -184,4 +188,5 @@ module.exports = {
   updateBootcamp,
   getBootcampsByRadius,
   getBootcampCourses,
+  uploadBootcampImage,
 };
