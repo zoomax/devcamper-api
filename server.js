@@ -16,7 +16,11 @@ const centralErrorHandler = require("./utils/errorHandler");
 const PORT = process.env.PORT || 5000;
 dotenv.config({ path: "./config/config.env" });
 const app = express();
+// using Cookies in your api 
 app.use(cookieParser()); 
+// in order to interact with cookies, you need to activate interceptors within postman 
+// which is located at the very top of the application in the form of a button with satallite-icon 
+// all you need is to click it and turn it on. that's all folks 
 connectDB();
 if (process.env.NODE_ENV == "development") {
   app.use(morgan("dev"));

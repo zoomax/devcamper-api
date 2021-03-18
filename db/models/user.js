@@ -1,6 +1,7 @@
 const { Schema, model } = require("mongoose");
-const dotenv = require("dotenv");
-dotenv.config({ path: "./config/config.env" });
+// const dotenv = require("dotenv");
+// dotenv.config({ path: "./config/config.env" });
+const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const UserSchema = new Schema({
@@ -42,6 +43,7 @@ const UserSchema = new Schema({
 });
 UserSchema.pre("save", async function (next) {
   try {
+    if (!this.isModified("password")) return next();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
@@ -63,7 +65,16 @@ UserSchema.methods.isPasswordMatch = async function (password) {
     return await bcrypt.compare(password, this.password);
   } catch (err) {
     console.err(err);
-    return false
+    return false;
   }
+};
+UserSchema.methods.getResetPasswordToken = function () {
+  const resetPasswordToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetPasswordToken)
+    .digest("hex");
+  this.resetPasswordExpiry = Date.now() + 10 * 60 * 1000;
+  return resetPasswordToken;
 };
 module.exports = model("user", UserSchema);

@@ -7,8 +7,8 @@ const { findByIdAndUpdate } = require("../db/models/bootcamp");
 // method  GET all bootcapms
 // access  Public
 const getBootcamps = async function (req, res, next) {
-  try { 
-    next()
+  try {
+    next();
   } catch (error) {
     next(error);
   }
@@ -19,10 +19,9 @@ const getBootcamps = async function (req, res, next) {
 const getBootcamp = async (req, res, next) => {
   try {
     let { id } = req.params;
-    const bootcamp = await BootcampModel.findById(id).populate(
-      "courses",
-      "title description tuition"
-    );
+    const bootcamp = await BootcampModel.findById(id)
+      .populate("courses", "title description tuition")
+      .populate("user");
     // console.log(bootcamp);
     req.response = {
       data: bootcamp ? [bootcamp] : [],
@@ -40,18 +39,24 @@ const createBootcamp = async (req, res, next) => {
   const body = req.body;
   // console.log(body);
   try {
-    const bootcamp = new BootcampModel({ ...body });
-    await bootcamp.save();
-    // console.log(bootcamp);
-    req.response = {
-      data: [bootcamp],
-      statusCode: 201,
-    };
-    // console.log(req.response);
-    next();
+    const publisherBootcampsCount = await BootcampModel.find({
+      user: req.user._id,
+    }).countDocuments();
+    if (publisherBootcampsCount == 0) {
+      const bootcamp = new BootcampModel({ ...body, user: req.user._id });
+      await bootcamp.save();
+      // console.log(bootcamp);
+      req.response = {
+        data: [bootcamp],
+        statusCode: 201,
+      };
+      // console.log(req.response);
+      return next();
+    }
+    return next(new Error("this publisher already has a bootcamp"));
   } catch (error) {
     console.log(error);
-    next(error);
+    return next(error);
   }
 };
 
@@ -61,15 +66,29 @@ const createBootcamp = async (req, res, next) => {
 const updateBootcamp = async (req, res, next) => {
   const { body } = req;
   const { id } = req.params;
+  const {
+    user: { _id },
+  } = req;
   try {
-    const bootcamp = await BootcampModel.findByIdAndUpdate(id, body, {
-      new: true,
-    }).populate("courses");
-    req.response = {
-      data: bootcamp ? [bootcamp] : [],
-      statusCode: bootcamp ? 203 : 404,
-    };
-    next();
+    const bootcamp = await BootcampModel.findById(id);
+    let isOwner = bootcamp && bootcamp.user.toString() == _id.toString();
+    console.log(isOwner) ; 
+    if (isOwner) {
+      const bootcamp = await BootcampModel.findByIdAndUpdate(id, body, {
+        new: true,
+      })
+        .populate("courses")
+        .populate("user");
+      req.response = {
+        data: bootcamp ? [bootcamp] : [],
+        statusCode: bootcamp ? 203 : 404,
+      };
+    } else {
+      req.response = {
+        statusCode: !bootcamp ? 404 : 401,
+      };
+    }
+    return next();
   } catch (error) {
     next(error);
   }
@@ -79,18 +98,26 @@ const updateBootcamp = async (req, res, next) => {
 // access  Private
 const deleteBootcamp = async (req, res, next) => {
   const { id } = req.params;
+  const {
+    user: { _id },
+  } = req;
 
   try {
     const bootcamp = await BootcampModel.findById(id);
-    if (bootcamp) {
+    let isOwner = bootcamp && bootcamp.user.toString() == _id.toString();
+    if (isOwner) {
       await CourseModel.deleteMany({ bootcamp: id });
       await bootcamp.remove();
+      req.response = {
+        data: bootcamp ? [bootcamp] : [],
+        statusCode: bootcamp ? 202 : 404,
+      };
+    } else {
+      req.response = {
+        statusCode: !bootcamp ? 404 : 401,
+      };
     }
-    req.response = {
-      data: bootcamp ? [bootcamp] : [],
-      statusCode: bootcamp ? 202 : 404,
-    };
-    next();
+    return next();
   } catch (error) {
     next(error);
   }
@@ -112,7 +139,7 @@ const getBootcampsByRadius = async (req, res, next) => {
           $centerSphere: [[longitude, latitude], radius],
         },
       },
-    });
+    }).populate("user");
     req.response = {
       data: bootcamps ? bootcamps : [],
       statusCode: bootcamps ? 200 : 404,
@@ -159,13 +186,13 @@ const uploadBootcampImage = async function (req, res, next) {
             photo: image.name,
           },
           { new: true }
-        );
+        ).populate("user");
         // console.log(bootcamp);
         req.response = {
           statusCode: bootcamp ? 203 : 404,
           data: bootcamp ? [bootcamp] : [],
         };
-        console.log(req.response) ; 
+        console.log(req.response);
         next();
       });
     } else {
@@ -190,3 +217,4 @@ module.exports = {
   getBootcampCourses,
   uploadBootcampImage,
 };
+// 60523fcff45b263b18483355 '/n' 60523fcff45b263b18483355

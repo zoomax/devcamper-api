@@ -12,10 +12,10 @@ const BootcampSchema = new Schema(
       required: [true, "name is required"],
       trim: true,
     },
-    photo : {
-      type : String , 
-      trim : true
-    } , 
+    photo: {
+      type: String,
+      trim: true,
+    },
     slug: String,
     description: {
       type: String,
@@ -105,7 +105,13 @@ const BootcampSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    user: {
+      type: Schema.ObjectId,
+      ref: "user",
+      required: true,
+    },
   },
+
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },

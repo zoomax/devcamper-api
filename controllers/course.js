@@ -45,13 +45,28 @@ const getCourseById = async function (req, res, next) {
 //@access   Public
 const deleteCourseById = async function (req, res, next) {
   const { courseId } = req.params;
+  const {
+    user: { _id },
+  } = req;
+
   try {
-    const course = await CourseModel.findByIdAndDelete(courseId);
-    req.response = {
-      statusCode: course ? 200 : 404,
-      data: course ? [course] : [],
-    };
-    next();
+    const course = await CourseModel.findById(courseId);
+    const bootcamp = course
+      ? await BootcampModel.findById(course.bootcamp)
+      : null;
+    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    if (isOwner) {
+      await course.remove();
+      req.response = {
+        statusCode: 202,
+        data: [course],
+      };
+    } else {
+      req.response = {
+        statusCode: course ? 401 : 404,
+      };
+    }
+    return next();
   } catch (err) {
     next(err);
   }
@@ -61,21 +76,36 @@ const deleteCourseById = async function (req, res, next) {
 //@desc     update course by id
 //@access   Public
 const updateCourseById = async function (req, res, next) {
-  const { courseId } = req.params;
   const { body } = req;
+  const { courseId } = req.params;
+  const {
+    user: { _id },
+  } = req;
+
   try {
-    const course = await CourseModel.findByIdAndUpdate(
-      courseId,
-      { ...body },
-      {
-        new: true,
-      }
-    ).populate("bootcamp");
-    req.response = {
-      statusCode: course ? 203 : 404,
-      data: course ? [course] : [],
-    };
-    next();
+    const course = await CourseModel.findById(courseId);
+    const bootcamp = course
+      ? await BootcampModel.findById(course.bootcamp)
+      : null;
+    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    if (isOwner) {
+      const course = await CourseModel.findByIdAndUpdate(
+        courseId,
+        { ...body },
+        {
+          new: true,
+        }
+      ).populate("bootcamp");
+      req.response = {
+        statusCode: 203,
+        data: [course],
+      };
+    } else {
+      req.response = {
+        statusCode: course ? 401 : 404,
+      };
+    }
+    return next();
   } catch (err) {
     next(err);
   }
@@ -87,23 +117,23 @@ const createCourse = async function (req, res, next) {
   const {
     body,
     params: { id },
+    user: { _id },
   } = req;
   try {
     const bootcamp = await BootcampModel.findById(id);
-    if (!bootcamp) {
-      req.response = {
-        statusCode: 404,
-      };
-      next();
-    } else {
+    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    if (isOwner) {
       const course = new CourseModel({ ...body, bootcamp: id });
       await course.save();
       req.response = {
-        statusCode: course ? 201 : 400,
-        data: course ? [course] : [],
+        statusCode: 201,
+        data: [course],
       };
-      next();
     }
+    req.response = {
+      statusCode: bootcamp ? 401 : 404,
+    };
+    return next();
   } catch (err) {
     next(err);
   }

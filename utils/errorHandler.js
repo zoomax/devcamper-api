@@ -28,7 +28,7 @@ const centralErrorHandler = (err, req, res, next) => {
     return validationErrorHandler(err, res);
   }
   if (err.name == "JsonWebTokenError") {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message,
       error  : err.name 
     });
@@ -37,13 +37,13 @@ const centralErrorHandler = (err, req, res, next) => {
     return duplicateErrorHandler(err, res);
   }
   if(err.kind  && err.kind == "ObjectId") { 
-    res.status(500).json({
+    return res.status(500).json({
       message: "internal server error",
       error  : "invalid ObjectID"
     });
   }
   console.log(err);
-  res.status(500).json({
+  return res.status(500).json({
     message:err.message ,
     error : "internal server error"
   });

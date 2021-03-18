@@ -19,7 +19,12 @@ const router = express.Router();
 router
   .route("/:id/courses")
   .get(getCourses, responseHandler)
-  .post(createCourse, responseHandler);
+  .post(
+    authMiddleware,
+    roleMiddleware("publisher", "admin"),
+    createCourse,
+    responseHandler
+  );
 
 router.route("/:zipcode/:distance").get(getBootcampsByRadius, responseHandler);
 

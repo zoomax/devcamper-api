@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const authMiddleware = async function (req, res, next) {
   const authHeader = req.headers.authorization;
   console.log(authHeader, "from auth middleware");
-  let token =
+  let token = 
     authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : "";
