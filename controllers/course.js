@@ -6,9 +6,8 @@ const BootcampModel = require("../db/models/bootcamp");
 //@access   Public
 const getCourses = async (req, res, next) => {
   const { id } = req.params;
-  console.log(id, "from course controller");
+  // console.log(id, "from course controller");
   try {
-    if (!id) return next();
     const courses = await CourseModel.find({ bootcamp: id }).populate(
       "bootcamp",
       "name description"
@@ -46,7 +45,7 @@ const getCourseById = async function (req, res, next) {
 const deleteCourseById = async function (req, res, next) {
   const { courseId } = req.params;
   const {
-    user: { _id },
+    user: { _id, role },
   } = req;
 
   try {
@@ -54,7 +53,9 @@ const deleteCourseById = async function (req, res, next) {
     const bootcamp = course
       ? await BootcampModel.findById(course.bootcamp)
       : null;
-    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    const isOwner =
+      bootcamp &&
+      (_id.toString() === bootcamp.user.toString() || role == "admin");
     if (isOwner) {
       await course.remove();
       req.response = {
@@ -79,7 +80,7 @@ const updateCourseById = async function (req, res, next) {
   const { body } = req;
   const { courseId } = req.params;
   const {
-    user: { _id },
+    user: { _id, role },
   } = req;
 
   try {
@@ -87,7 +88,9 @@ const updateCourseById = async function (req, res, next) {
     const bootcamp = course
       ? await BootcampModel.findById(course.bootcamp)
       : null;
-    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    const isOwner =
+      bootcamp &&
+      (_id.toString() === bootcamp.user.toString() || role == "admin");
     if (isOwner) {
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
@@ -116,24 +119,28 @@ const updateCourseById = async function (req, res, next) {
 const createCourse = async function (req, res, next) {
   const {
     body,
-    params: { id },
-    user: { _id },
+    params: { courseId },
+    user: { _id, role },
   } = req;
   try {
-    const bootcamp = await BootcampModel.findById(id);
-    const isOwner = bootcamp && _id.toString() === bootcamp.user.toString();
+    const bootcamp = await BootcampModel.findById(courseId);
+    const isOwner =
+      bootcamp &&
+      (_id.toString() === bootcamp.user.toString() || role === "admin");
     if (isOwner) {
-      const course = new CourseModel({ ...body, bootcamp: id });
+      const course = new CourseModel({ ...body, bootcamp: courseId });
       await course.save();
       req.response = {
         statusCode: 201,
         data: [course],
       };
+      return next();
+    } else {
+      req.response = {
+        statusCode: !isOwner ? 401 : 404,
+      };
+      return next();
     }
-    req.response = {
-      statusCode: bootcamp ? 401 : 404,
-    };
-    return next();
   } catch (err) {
     next(err);
   }

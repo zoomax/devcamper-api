@@ -11,6 +11,7 @@ const morgan = require("morgan");
 const colors = require("colors");
 const cookieParser = require("cookie-parser") ; 
 const fileUpload = require("express-fileupload");
+const users  = require("./routes/user") ; 
 
 const centralErrorHandler = require("./utils/errorHandler");
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use("/api/v1/auth", auth);
 app.use("/api/v1/bootcamps", bootcamps);
 app.use("/api/v1/courses", courses);
 app.use("/api/v1/files/", files);
+app.use("/api/v1/users/", users);
 
 app.use(centralErrorHandler);
 const server = app.listen(PORT, () => {
